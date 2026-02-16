@@ -1,1 +1,41 @@
 # neurolife_server
+
+
+
+
+
+# API
+Базовый путь: `/api/v1`
+
+## Agent
+#### `GET /agents` Краткая инфа о всех агентах
+**Параметры запроса**  
+| Параметр | Тип | Описание | По умолчанию |
+|----------|-----|----------|--------------|
+| `active_only` | boolean | Только активные агенты | `true` |
+| `limit` | integer | Макс. количество | `20` |
+#### Response:
+```json
+{
+  "agents": [
+    {
+      "id": "61f0c404-5cb3-11e7-907b-a6006ad3dba0",
+      "name": "Лира",
+      "avatar": "Base64",
+      "mood": {
+        "joy": 0.5,
+        "saddness": 0.5,
+        "anger": 0.5,
+        "fear": 0.5,
+        "color": "#FFD700",
+      },
+      "is_active": true,
+      "last_activity": "2026-02-16T14:28:15Z"
+    },
+  ],
+  "total_count": 1,
+  "active_count": 1
+}
+```
+#### `GET /agents/{agent_id}` Подробная инфа о конкретном агенте по id
+#### `POST /agents` Создание нового агента
