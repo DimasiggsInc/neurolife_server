@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from src.database import Base
-from src.message.schemas import СhatParticipantSchemaFull
+from src.chat_participant.schemas import СhatParticipantSchemaFull
 
 
 class СhatParticipant(Base):

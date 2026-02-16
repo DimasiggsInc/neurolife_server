@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 from src.database import Base
-from src.agent.schemas import AgentSchemaFull
+from src.agent.schemas import AgentFullInfo
 
 
 class Agent(Base):
@@ -66,8 +66,8 @@ class Agent(Base):
     )
 
 
-    def to_read_model(self) -> AgentSchemaFull:
+    def to_read_model(self) -> AgentFullInfo:
         """Преобразует модель в схему для чтения."""
-        return AgentSchemaFull(
+        return AgentFullInfo(
             id=self.id,
         )

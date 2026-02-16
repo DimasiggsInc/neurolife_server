@@ -4,10 +4,10 @@ import uuid
 from datetime import datetime
 
 from src.database import Base
-from src.agent.schemas import AgentSchemaFull
+from src.current_mood.schemas import AgentCurrentMood
 
 
-class Agent(Base):
+class CurrentMood(Base):
     """Модель Агента для БД."""
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -55,8 +55,8 @@ class Agent(Base):
     )
 
 
-    def to_read_model(self) -> AgentSchemaFull:
+    def to_read_model(self) -> AgentCurrentMood:
         """Преобразует модель в схему для чтения."""
-        return AgentSchemaFull(
+        return AgentCurrentMood(
             id=self.id,
         )

@@ -4,10 +4,10 @@ import uuid
 from datetime import datetime
 
 from src.database import Base
-from src.message.schemas import MessageSchemaFull
+from src.relationship.schemas import RelationshipSchemaFull
 
 
-class Message(Base):
+class Relationship(Base):
     """Модель Сообщения для БД."""
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -59,8 +59,8 @@ class Message(Base):
     )
 
 
-    def to_read_model(self) -> MessageSchemaFull:
+    def to_read_model(self) -> RelationshipSchemaFull:
         """Преобразует модель в схему для чтения."""
-        return MessageSchemaFull(
+        return RelationshipSchemaFull(
             id=self.id,
         )

@@ -1,13 +1,22 @@
-from sqlalchemy import Boolean, DateTime, Float, CheckConstraint
+from sqlalchemy import Boolean, DateTime, Float, CheckConstraint, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
 from src.database import Base
-from src.agent.schemas import AgentSchemaFull
+from src.world_state.schemas import WorldStateSchemaFull
+
+import uuid
 
 
 class WorldState(Base):
     """Модель Агента для БД."""
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        index=True
+    )
 
     time_speed: Mapped[float] = mapped_column(
         Float,
@@ -28,8 +37,8 @@ class WorldState(Base):
     )
 
 
-    def to_read_model(self) -> AgentSchemaFull:
+    def to_read_model(self) -> WorldStateSchemaFull:
         """Преобразует модель в схему для чтения."""
-        return AgentSchemaFull(
+        return WorldStateSchemaFull(
             id=self.id,
         )
