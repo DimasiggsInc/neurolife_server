@@ -22,7 +22,7 @@ async def get_agent_info(agent_id: UUID) -> AgentFullInfo:
 async def get_agents_overview() -> AgentList:
     mood = AgentCurrentMood(
         joy = 0.5,
-        saddness=0.5,
+        sadness=0.5,
         anger=0.5,
         fear=0.5,
         color='#ffffff'
@@ -30,14 +30,14 @@ async def get_agents_overview() -> AgentList:
 
     a = AgentOverview(
         id = uuid4(),
-        name = "",
+        name = "Эдик",
         avatar = "",
         mood = mood,
         is_active=True,
         last_activity=datetime.now()
     ) 
 
-    return AgentList(agents=[a, a], total_count=2, active_count=2)
+    return AgentList(agents=[a, a, a, a, a], total_count=2, active_count=2)
 
 
 

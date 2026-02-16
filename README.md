@@ -25,7 +25,7 @@
       "avatar": "Base64",
       "mood": {
         "joy": 0.5,
-        "saddness": 0.5,
+        "sadness": 0.5,
         "anger": 0.5,
         "fear": 0.5,
         "color": "#FFD700",
@@ -70,7 +70,7 @@
   },
   "mood": {
       "joy": 0.5,
-      "saddness": 0.5,
+      "sadness": 0.5,
       "anger": 0.5,
       "fear": 0.5,
       "color": "#FFD700",
