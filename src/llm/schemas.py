@@ -1,9 +1,12 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, Dict, List
-from uuid import UUID
+from typing import Optional, Dict, List, Literal, Any
 from datetime import datetime
 
-# LLMModelList, LLMModelFullInfo, LLMModelOverview, LLMModelCreate
+
+# =========================
+# Your base schemas
+# =========================
+
 class LLMMessage(BaseModel):
     role: str  # "system", "user", "assistant"
     content: str
@@ -18,21 +21,60 @@ class LLMResponse(BaseModel):
 class LLMModelList(BaseModel):
     models: list[str]
 
+
 class AgentContextInput(BaseModel):
-    last_10_messages: List[str]       # 1) Последние 10 сообщений
-    summary_of_rest: str              # 2) Сумма остальных (саммари)
-    vector_memory_about_interlocutor: str # 3) Инфо о собеседнике из Vector DB
-    pending_question: Optional[str]   # 4) Вопрос (если есть)
-    agent_mood: str                   # 5) Настроение
-    agent_profile: dict               # 5) Инфо об агенте (личность)
-    
+    last_10_messages: List[str]
+    summary_of_rest: str
+    vector_memory_about_interlocutor: str
+    pending_question: Optional[str]
+    agent_mood: str
+    agent_profile: dict
+
+
 class AgentDecisionOutput(BaseModel):
-    new_mood: str                     # 1) Новое настроение
-    new_memory_entry: str             # 2) Новое воспоминание (для векторной БД)
-    message_to_chat: Optional[str]    # 3) Сообщение в чат (или None, если игнор)
-    relationship_change: float        # Изменение отношения к собеседнику (-0.1 до 0.1)
+    new_mood: str
+    message_to_chat: Optional[str]
+    relationship_change: float
+    memory_importance: float
+
 
 class WSEvent(BaseModel):
-    type: str                         # 'agent_message', 'mood_change', 'graph_update'
+    type: str  # 'agent_message', 'mood_change', 'graph_update'
     timestamp: datetime
     data: dict
+
+
+# =========================
+# OpenAI-like response schemas (FreeQwenApi compatible)
+# =========================
+
+class OpenAIChatMessage(BaseModel):
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+
+
+class OpenAIChatChoice(BaseModel):
+    index: int
+    message: OpenAIChatMessage
+    finish_reason: Optional[str] = None
+
+
+class OpenAIUsage(BaseModel):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
+
+class OpenAIChatCompletionResponse(BaseModel):
+    id: str
+    object: str
+    created: int
+    model: str
+    choices: List[OpenAIChatChoice]
+    usage: Optional[Dict[str, Any]] = None  # <-- ВОТ ЭТО
+
+    chatId: Optional[str] = None
+    parentId: Optional[str] = None
+
+    model_config = ConfigDict(extra="allow")
