@@ -1,3 +1,4 @@
+import base64
 from typing import Optional
 import uuid
 from pathlib import Path
@@ -211,6 +212,35 @@ class AgentService(AgentServicePort):
             trigger="user_message"
         )
 
+    def _encode_image_to_base64(self, avatar_url: str) -> str:
+        """✅ Читает файл и возвращает Base64 строку"""
+        if not avatar_url:
+            return self._get_default_avatar_base64()
+        
+        try:
+            # Извлекаем имя файла из пути (например, "/avatars/uuid.png" -> "uuid.png")
+            filename = avatar_url.split("/")[-1]
+            file_path = self.AVATARS_DIR / filename
+            
+            if not file_path.exists():
+                return self._get_default_avatar_base64()
+            
+            with open(file_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+            
+            # Возвращаем в формате Data URI для удобного использования на фронтенде
+            return f"data:image/png;base64,{encoded_string}"
+            
+        except Exception as e:
+            print(f"⚠️ Error encoding image {avatar_url}: {e}")
+            return self._get_default_avatar_base64()
+    
+    def _get_default_avatar_base64(self) -> str:
+        """Возвращает дефолтную заглушку (серый круг) в Base64"""
+        # Минимальный PNG 1x1 пиксель (серый)
+        default_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        return f"data:image/png;base64,{default_png}"
+
     async def get_all_agents(self, limit: int = 20, active_only: bool = True) -> AgentList:
         try:
             agents = await self.agent_repository.get_all(limit=limit, active_only=active_only)
@@ -225,7 +255,7 @@ class AgentService(AgentServicePort):
             
             agents_overview = []
             for agent in agents:
-                # ✅ Загружаем настроение отдельным запросом если есть ID
+                # Загружаем настроение
                 if agent.current_mood_id:
                     mood_result = await self.session.execute(
                         select(CurrentMood).where(CurrentMood.id == agent.current_mood_id)
@@ -245,10 +275,13 @@ class AgentService(AgentServicePort):
                 else:
                     mood_data = self._default_mood()
                 
+                # ✅ Кодируем аватар в Base64
+                avatar_base64 = self._encode_image_to_base64(agent.avatar_url)
+                
                 overview = AgentOverview(
                     id=agent.id,
                     name=agent.name,
-                    avatar=agent.avatar_url,
+                    avatar=avatar_base64,  # ✅ Отправляем Base64 вместо пути
                     mood=mood_data,
                     is_active=agent.is_active,
                     last_activity=agent.updated_at or datetime.utcnow()
