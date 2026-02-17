@@ -23,7 +23,7 @@ from src.current_mood.repositories import CurrentMoodRepository
 
 from src.message.schemas import UserMessageToAgent
 
-from src.llm.interfaces import LLMMessage
+from src.agent.utils import generate_color
 
 
 class AgentService(AgentServicePort):
@@ -71,69 +71,74 @@ class AgentService(AgentServicePort):
         )
         personality = await self.personality_repository.add(personality)
 
-        # 3. Создаем настроение
-        current_mood = CurrentMood(
-            joy=1.0 if new_agent.mood == "joy" else 0.0,
-            sadness=1.0 if new_agent.mood == "sadness" else 0.0,
-            anger=1.0 if new_agent.mood == "anger" else 0.0,
-            fear=1.0 if new_agent.mood == "fear" else 0.0,
-            updated_at=datetime.utcnow()
-        )
-        current_mood = await self.current_mood_repository.add(current_mood)
-
-        # ✅ 4. Генерируем аватар с UUID в имени
-        avatar_filename = f"{agent_id}.png"  # ← UUID вместо имени
-        avatar_url = f"/avatars/{avatar_filename}"
-        avatar_full_path = self.AVATARS_DIR / avatar_filename
-        
-        # Генерируем и сохраняем
-        self.image_generator.generate(avatar_url).save(str(avatar_full_path))
-
-        # 5. Создаем агента с заранее сгенерированным UUID
-        agent = Agent(
-            id=agent_id,  # ✅ Передаём UUID явно
-            name=new_agent.name,
-            personality_id=personality.id,
-            current_mood_id=current_mood.id,
-            current_plan=new_agent.plans,
-            avatar_url=avatar_url,
-            is_active=True,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-
         try:
+            # 3. Создаем настроение (запись в БД)
+            current_mood = CurrentMood(
+                joy=1.0 if new_agent.mood == "joy" else 0.0,
+                sadness=1.0 if new_agent.mood == "sadness" else 0.0,
+                anger=1.0 if new_agent.mood == "anger" else 0.0,
+                fear=1.0 if new_agent.mood == "fear" else 0.0,
+                updated_at=datetime.utcnow()
+            )
+            current_mood = await self.current_mood_repository.add(current_mood)
+
+            # 4. Валидация данных для ответа (внутри try, чтобы сработала очистка при ошибке)
+            rgb_color = generate_color(current_mood.sadness, current_mood.joy, current_mood.anger, current_mood.fear)
+            
+            print("\n"*20)
+            print(rgb_color)
+
+            mood = AgentCurrentMood(
+                joy=current_mood.joy,
+                sadness=current_mood.sadness,
+                anger=current_mood.anger,
+                fear=current_mood.fear,
+                color=str(rgb_color), 
+            )
+
+            # ✅ 5. Генерируем аватар
+            avatar_filename = f"{agent_id}.png"
+            avatar_url = f"/avatars/{avatar_filename}"
+            avatar_full_path = self.AVATARS_DIR / avatar_filename
+            
+            self.image_generator.generate(avatar_url).save(str(avatar_full_path))
+
+            # 6. Создаем агента
+            agent = Agent(
+                id=agent_id,
+                name=new_agent.name,
+                personality_id=personality.id,
+                current_mood_id=current_mood.id,
+                current_plan=new_agent.plans,
+                avatar_url=avatar_url,
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+
             agent = await self.agent_repository.add(agent)
             await self.session.commit()
             await self.session.refresh(agent)
-
+            avatar_base64 = self._encode_image_to_base64(agent.avatar_url)
             return AgentFullInfo(
-                id=str(agent.id),  # ✅ UUID в строковом формате
+                id=agent.id,
                 name=agent.name,
-                avatar_url=agent.avatar_url,
-                mood={"category": new_agent.mood, "valence": 0.5},
-                current_plan=new_agent.plans,
-                created_at=agent.created_at.isoformat() + "Z"
+                avatar=avatar_base64,
+                mood=mood,
+                created_at=agent.created_at.isoformat(),
+                is_active=agent.is_active,
+                last_activity=agent.updated_at.isoformat(),
+                background=personality.background,
+                model="",
+                plan=agent.current_plan,
             )
             
-        except IntegrityError as e:
+        except Exception as e:
             await self.session.rollback()
-            error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
-            
-            if 'agent_name_key' in error_msg or 'name' in error_msg:
-                # ✅ Удаляем аватар при ошибке (чтобы не было мусора)
-                if avatar_full_path.exists():
-                    avatar_full_path.unlink()
-                raise ValueError(f"Agent with name '{new_agent.name}' already exists")
-            else:
-                raise ValueError(f"Database integrity error: {error_msg}")
-                
-        except SQLAlchemyError as e:
-            await self.session.rollback()
-            # ✅ Удаляем аватар при ошибке
-            if avatar_full_path.exists():
+            # Удаляем аватар при любой ошибке внутри try
+            if 'avatar_full_path' in locals() and avatar_full_path.exists():
                 avatar_full_path.unlink()
-            raise ValueError(f"Database error during agent creation: {str(e)}")
+            raise e
 
     async def send_message_to_agent(
     self,

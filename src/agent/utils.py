@@ -72,3 +72,49 @@ class ImageGenerator(ImageGeneratorPort):
                     draw.rectangle([x0, y0, x1, y1], fill=color)
 
         return img
+
+
+def generate_color(sadness, joy, anger, fear) -> str:
+    """
+    Возвращает смешанный RGB-цвет на основе интенсивности эмоций.
+    Параметры: значения от 0.0 до 1.0 (рекомендуется), но допустимы любые неотрицательные числа.
+    Возвращает: кортеж (R, G, B) в диапазоне [0, 255]
+    """
+    # Базовые цвета для эмоций (RGB)
+    EMOTIONS = {
+        'sadness': (0, 0, 255),    # Темно-синий
+        'joy':     (255, 255, 0),  # Ярко-жёлтый
+        'anger':   (255, 0, 0),    # Красный
+        'fear':    (128, 0, 128)   # Фиолетовый (как в исходном коде)
+    }
+    
+    # Приводим значения к неотрицательным числам
+    weights = [
+        max(0, float(sadness)),
+        max(0, float(joy)),
+        max(0, float(anger)),
+        max(0, float(fear))
+    ]
+    
+    total = sum(weights)
+    if total <= 1e-9:  # Защита от деления на ноль
+        return "#ffffff"  # Нейтральный чёрный
+    
+    # Взвешенное смешение каналов
+    r = g = b = 0.0
+    for w, (cr, cg, cb) in zip(weights, EMOTIONS.values()):
+        r += w * cr
+        g += w * cg
+        b += w * cb
+    
+    r /= total
+    g /= total
+    b /= total
+
+    # Нормализация и конвертация в int
+    r_int = int(round(max(0, min(255, r))))
+    g_int = int(round(max(0, min(255, g))))
+    b_int = int(round(max(0, min(255, b))))
+    
+    # Преобразование в hex с zero-padding (2 символа на канал)
+    return f"#{r_int:02X}{g_int:02X}{b_int:02X}"
