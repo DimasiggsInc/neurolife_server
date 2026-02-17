@@ -50,7 +50,7 @@ class AgentService(AgentServicePort):
 
     async def create_agent(self, new_agent: AgentCreate) -> AgentFullInfo:
         # ✅ 0. Генерируем UUID заранее
-        agent_uuid = uuid.uuid4()
+        agent_id = uuid.uuid4()
 
         # 1. Создаем речевой стиль
         speech_style = SpeechStyle(
@@ -82,7 +82,7 @@ class AgentService(AgentServicePort):
         current_mood = await self.current_mood_repository.add(current_mood)
 
         # ✅ 4. Генерируем аватар с UUID в имени
-        avatar_filename = f"{agent_uuid}.png"  # ← UUID вместо имени
+        avatar_filename = f"{agent_id}.png"  # ← UUID вместо имени
         avatar_url = f"/avatars/{avatar_filename}"
         avatar_full_path = self.AVATARS_DIR / avatar_filename
         
@@ -91,7 +91,7 @@ class AgentService(AgentServicePort):
 
         # 5. Создаем агента с заранее сгенерированным UUID
         agent = Agent(
-            id=agent_uuid,  # ✅ Передаём UUID явно
+            id=agent_id,  # ✅ Передаём UUID явно
             name=new_agent.name,
             personality_id=personality.id,
             current_mood_id=current_mood.id,
@@ -300,7 +300,63 @@ class AgentService(AgentServicePort):
         except Exception as e:
             await self.session.rollback()
             raise ValueError(f"Unexpected error: {str(e)}")
-    
+
+    async def get_agent_by_id(self, agent_id: str) -> AgentFullInfo:
+        """✅ Получить полную информацию об агенте по ID"""
+        try:
+            # 1. Валидируем UUID
+            agent_uuid = agent_id
+            
+            # 2. Получаем агента
+            agent = await self.agent_repository.get_by_id(agent_uuid)
+            if not agent:
+                raise ValueError(f"Agent with id '{agent_id}' not found")
+            
+            # 3. Загружаем настроение
+            mood_data = self._default_mood()
+            if agent.current_mood_id:
+                mood_result = await self.session.execute(
+                    select(CurrentMood).where(CurrentMood.id == agent.current_mood_id)
+                )
+                mood_obj = mood_result.scalar_one_or_none()
+                if mood_obj:
+                    mood_data = AgentCurrentMood(
+                        joy=mood_obj.joy or 0.3,
+                        sadness=mood_obj.sadness or 0.1,
+                        anger=mood_obj.anger or 0.1,
+                        fear=mood_obj.fear or 0.1,
+                        color=mood_obj.color or "#4A90E2"
+                    )
+            
+            # 4. Кодируем аватар в Base64
+            avatar_base64 = self._encode_image_to_base64(agent.avatar_url)
+            
+            # 5. ✅ Формируем ответ с ПРАВИЛЬНЫМИ полями
+            return AgentFullInfo(
+                id=agent.id,
+                name=agent.name,
+                avatar=avatar_base64,              # ✅ avatar (не avatar_url)
+                mood=mood_data,                    # ✅ Объект AgentCurrentMood
+                is_active=agent.is_active,         # ✅ Требуется
+                last_activity=agent.updated_at or datetime.utcnow(),  # ✅ Требуется
+                background= "",  # TODO: Получать по 
+                model="gpt-4",                     # ✅ Требуется (заглушка или из БД)
+                plan=agent.current_plan or "",     # ✅ plan (не current_plan)
+                created_at=agent.created_at.isoformat() + "Z" if agent.created_at else ""
+            )
+            
+        except ValueError as e:
+            error_msg = str(e)
+            if "badly formed hexadecimal UUID" in error_msg or "invalid literal" in error_msg:
+                raise ValueError(f"Invalid agent id format: '{agent_id}'")
+            raise
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise ValueError(f"Database error: {str(e)}")
+        except Exception as e:
+            await self.session.rollback()
+            raise ValueError(f"Unexpected error: {str(e)}")
+
     def _default_mood(self) -> AgentCurrentMood:
         """Вспомогательный метод для дефолтного настроения"""
         return AgentCurrentMood(

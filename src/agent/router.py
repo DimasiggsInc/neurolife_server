@@ -19,8 +19,13 @@ router = APIRouter(
 
 
 @router.get("/{agent_id}", response_model=AgentFullInfo)
-async def get_agent_info(agent_id: UUID) -> AgentFullInfo:
-    return AgentFullInfo(id=agent_id)
+async def get_agent_info(
+    agent_id: UUID,
+    service: AgentService = Depends(get_agent_service)
+) -> AgentFullInfo:
+    created_agent = await service.get_agent_by_id(agent_id)
+
+    return created_agent
 
 
 @router.get("/", response_model=AgentList)

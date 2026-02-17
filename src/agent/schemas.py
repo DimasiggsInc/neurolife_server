@@ -5,9 +5,6 @@ from datetime import datetime
 
 from src.current_mood.schemas import AgentCurrentMood
 
-class AgentFullInfo(BaseModel):
-    id: UUID
-
 
 class AgentOverview(BaseModel):
     id: UUID
@@ -17,6 +14,17 @@ class AgentOverview(BaseModel):
     is_active: bool
     last_activity: datetime
 
+class AgentFullInfo(BaseModel):
+    id: UUID
+    name: str
+    avatar: str              
+    mood: AgentCurrentMood
+    is_active: bool          
+    last_activity: datetime  
+    background: str          
+    model: str               
+    plan: str                
+    created_at: str
 
 class AgentList(BaseModel):
     agents: List[AgentOverview]
@@ -29,7 +37,7 @@ class AgentCreate(BaseModel):
     mood: str
     plans: str
     background: str
-    ai_model_id: int
+    ai_model: str
 
     model_config = ConfigDict(
         protected_namespaces=()  # Разрешаем поля с префиксом model_
