@@ -22,6 +22,7 @@ from src.personality.models import Personality  # noqa
 from src.relationship.models import Relationship  # noqa
 from src.speech_style.models import SpeechStyle  # noqa
 from src.world_state.models import WorldState  # noqa
+from src.event.models import Event  # noqa
 
 
 # Путь к корню проекта: .../

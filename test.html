@@ -1,92 +1,208 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Тест WebSocket</title>
+    <meta charset="UTF-8">
+    <title>🤖 Симулятор Агентов</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .event { padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .agent-action { background: #e3f2fd; border-left: 4px solid #2196F3; }
+        .world-event { background: #fff3e0; border-left: 4px solid #FF9800; }
+        .message { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        #events { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+        .controls { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; }
+        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .status.connected { background: #4CAF50; }
+        .status.disconnected { background: #f44336; }
+    </style>
 </head>
 <body>
-    <h1>🤖 Симулятор Агентов</h1>
+    <h1>🤖 Симулятор Живых Существ</h1>
     
-    <div>
-        <button onclick="connect()">Подключиться</button>
-        <button onclick="disconnect()">Отключиться</button>
+    <div class="controls">
+        <h3>Управление</h3>
+        <div>
+            <span id="connectionStatus" class="status disconnected"></span>
+            <span id="connectionText">Отключено</span>
+        </div>
+        
+        <div>
+            <button onclick="connect()">Подключиться</button>
+            <button onclick="disconnect()">Отключиться</button>
+        </div>
+        
+        <div>
+            <input id="messageInput" placeholder="Сообщение агенту...">
+            <input id="agentIdInput" placeholder="ID агента" style="width: 200px;">
+            <button onclick="sendMessage()">Отправить сообщение</button>
+        </div>
+        
+        <div>
+            <button onclick="sendWorldEvent('found_treasure', 'Найден клад у реки!')">💰 Найден клад!</button>
+            <button onclick="sendWorldEvent('weather_change', 'Начался дождь!')">🌧️ Дождь</button>
+            <button onclick="sendWorldEvent('danger', 'Появилась опасность!')">⚠️ Опасность</button>
+        </div>
+        
+        <div>
+            <label>Скорость симуляции: </label>
+            <input type="range" id="speedSlider" min="1" max="30" value="5" onchange="changeSpeed(this.value)">
+            <span id="speedValue">5</span> сек
+        </div>
     </div>
     
-    <div>
-        <input id="messageInput" placeholder="Сообщение агенту...">
-        <button onclick="sendMessage()">Отправить</button>
-    </div>
-    
-    <div>
-        <button onclick="sendWorldEvent()">Событие: Найден клад!</button>
-    </div>
-    
-    <h3>События:</h3>
+    <h3>📊 Лента событий (<span id="eventCount">0</span>)</h3>
     <div id="events"></div>
 
     <script>
         let ws;
+        let eventCount = 0;
         
         function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('Уже подключено', 'error');
+                return;
+            }
+            
             ws = new WebSocket('ws://localhost:8000/ws/events');
             
             ws.onopen = () => {
-                log('✅ Подключено!');
+                updateStatus(true);
+                log('✅ Подключено к симулятору!', 'message');
             };
             
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                
-                // ✅ Проверяем структуру перед доступом
-                console.log('Получено сообщение:', data);
-                
-                const messageType = data.type || 'unknown';
-                const eventData = data.data || {};
-                
-                if (messageType === 'message_received') {
-                    log(`📩 Сообщение получено: ${eventData.content || 'нет контента'}`);
-                    log(`   Агент: ${eventData.agent_id || 'неизвестно'}`);
-                    log(`   Ответ агента: ${eventData.agent_response || 'ожидание...'}`);
-                } else if (messageType === 'world_event') {
-                    log(`🌍 Событие мира: ${eventData.description || 'нет описания'}`);
-                } else if (messageType === 'agent_update') {
-                    log(`🤖 Обновление агента: ${eventData.update_type || 'неизвестно'}`);
-                } else {
-                    log(`📩 ${messageType}: ${JSON.stringify(eventData)}`);
-                }
+                handleWebSocketMessage(data);
             };
             
             ws.onclose = () => {
-                log('❌ Отключено');
+                updateStatus(false);
+                log('❌ Отключено от сервера', 'error');
+            };
+            
+            ws.onerror = (error) => {
+                log('⚠️ Ошибка WebSocket', 'error');
             };
         }
         
+        function handleWebSocketMessage(data) {
+            console.log('📩 Получено:', data);
+            
+            const type = data.type;
+            const eventData = data.data || {};
+            
+            if (type === 'connection_established') {
+                log(`🔗 ${eventData.message}`, 'message');
+            }
+            else if (type === 'agent_action') {
+                log(`🤖 ${eventData.agent_name || 'Агент'} ${eventData.emoji || '🤖'} ${eventData.action?.description || 'делает что-то'}`, 'agent-action');
+            }
+            else if (type === 'world_event') {
+                log(`🌍 ${eventData.description || 'Событие мира'}`, 'world-event');
+            }
+            else if (type === 'new_message') {
+                log(`💬 ${eventData.sender || 'Кто-то'}: ${eventData.content || '...'}`, 'message');
+                if (eventData.agent_response) {
+                    log(`   🤖 Ответ агента: ${eventData.agent_response}`, 'agent-action');
+                }
+            }
+            else if (type === 'message_received') {
+                log(`✅ Сообщение получено: ${eventData.content || ''}`, 'message');
+            }
+            else if (type === 'agent_update') {
+                log(`🔄 Агент обновился: ${eventData.update_type || ''}`, 'agent-action');
+            }
+            else if (type === 'error') {
+                log(`❌ Ошибка: ${eventData.message || 'Неизвестная ошибка'}`, 'error');
+            }
+            else {
+                log(`📩 ${type}: ${JSON.stringify(eventData)}`, 'agent-action');
+            }
+        }
+        
         function disconnect() {
-            if (ws) ws.close();
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
         }
         
         function sendMessage() {
-            const input = document.getElementById('messageInput');
+            const content = document.getElementById('messageInput').value;
+            const agentId = document.getElementById('agentIdInput').value;
+            
+            if (!content || !agentId) {
+                log('⚠️ Введите сообщение и ID агента', 'error');
+                return;
+            }
+            
             ws.send(JSON.stringify({
                 type: 'user_message',
-                agent_id: 'agent-uuid-here',
-                content: input.value
+                agent_id: agentId,
+                content: content
             }));
-            input.value = '';
+            
+            document.getElementById('messageInput').value = '';
+            log(`📤 Отправлено агенту ${agentId}`, 'message');
         }
         
-        function sendWorldEvent() {
+        function sendWorldEvent(eventType, description) {
             ws.send(JSON.stringify({
                 type: 'world_event',
-                event_type: 'found_treasure',
-                description: 'Найден клад у реки!',
+                event_type: eventType,
+                description: description,
                 affected_agents: []
             }));
+            log(`🌍 Отправлено событие: ${description}`, 'world-event');
         }
         
-        function log(message) {
-            const div = document.getElementById('events');
-            div.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${message}</div>`;
+        function changeSpeed(value) {
+            document.getElementById('speedValue').textContent = value;
+            // Можно отправить на сервер для изменения интервала
+            fetch(`http://localhost:8000/simulation/interval?seconds=${value}`, {
+                method: 'PUT'
+            }).then(() => {
+                log(`⏱️ Скорость изменена на ${value} сек`, 'message');
+            });
         }
+        
+        function updateStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            const text = document.getElementById('connectionText');
+            
+            if (connected) {
+                status.className = 'status connected';
+                text.textContent = 'Подключено';
+            } else {
+                status.className = 'status disconnected';
+                text.textContent = 'Отключено';
+            }
+        }
+        
+        function log(message, type = 'agent-action') {
+            const div = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `event ${type}`;
+            eventDiv.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            
+            div.insertBefore(eventDiv, div.firstChild);
+            
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+            
+            // Ограничиваем количество событий
+            while (div.children.length > 100) {
+                div.removeChild(div.lastChild);
+            }
+        }
+        
+        // Автоподключение при загрузке
+        window.onload = () => {
+            connect();
+        };
     </script>
 </body>
 </html>

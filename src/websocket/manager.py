@@ -93,6 +93,12 @@ class ConnectionManager:
         """Событие мира (найден клад, изменилась погода и т.д.)"""
         await self.broadcast_event("world_event", event_data)
 
+    async def broadcast_agent_action(self, agent_id: str, action_data: dict):
+        """Отправить действие агента всем клиентам"""
+        await self.broadcast_event("agent_action", {
+            "agent_id": agent_id,
+            **action_data
+        })
 
 # Глобальный экземпляр
 manager = ConnectionManager()
