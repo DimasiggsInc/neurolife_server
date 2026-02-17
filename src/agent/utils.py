@@ -5,7 +5,7 @@ from src.agent.interfaces import ImageGeneratorPort
 
 
 class ImageGenerator(ImageGeneratorPort):
-    def __init__(self, size: int = 300, grid_size: int = 15):
+    def __init__(self, size: int = 300, grid_size: int = 6):
         self.size = size
         self.grid_size = grid_size
     

@@ -46,7 +46,7 @@ async def create_agent(
 ) -> AgentFullInfo:
     print(create_agent_scheme)
 
-    a = await service.create_agent(create_agent_scheme)
+    a = await service.create_agent(create_agent_scheme)  # TODO
 
-    return AgentFullInfo(id=uuid4())
+    return a
 
