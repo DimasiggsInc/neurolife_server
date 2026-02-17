@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List
 from uuid import UUID
 from datetime import datetime
@@ -22,3 +22,15 @@ class AgentList(BaseModel):
     agents: List[AgentOverview]
     total_count: int
     active_count: int
+
+
+class AgentCreate(BaseModel):
+    name: str
+    mood: str
+    plans: str
+    background: str
+    ai_model_id: int
+
+    model_config = ConfigDict(
+        protected_namespaces=()  # Разрешаем поля с префиксом model_
+    )

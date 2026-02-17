@@ -17,19 +17,13 @@ class CurrentMood(Base):
         index=True
     )
 
-    agent_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        index=True,
-        nullable=False
-    )
-
     joy: Mapped[float] = mapped_column(
         Float,
         CheckConstraint('value >= 0 AND value <= 1'),
         default=0.5
     )
 
-    saddness: Mapped[float] = mapped_column(
+    sadness: Mapped[float] = mapped_column(
         Float,
         CheckConstraint('value >= 0 AND value <= 1'),
         default=0.5

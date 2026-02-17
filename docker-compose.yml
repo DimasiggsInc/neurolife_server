@@ -3,6 +3,8 @@ version: '3.8'
 services:
   app:
       build: .
+      volumes:
+      - ./avatars:/server/avatars  # ✅ Сохраняем аватары на хосте
       depends_on:
         - postgres
       environment:

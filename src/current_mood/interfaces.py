@@ -1,0 +1,23 @@
+from typing import Optional, List, Protocol
+from datetime import datetime
+from src.current_mood.models import CurrentMood
+
+
+class CurrentMoodRepositoryPort(Protocol):
+    async def add(self, current_mood: CurrentMood) -> CurrentMood: ...
+    async def get_by_id(self, mood_id: int) -> Optional[CurrentMood]: ...
+    async def get_by_agent_id(self, agent_id: int) -> Optional[CurrentMood]: ...
+    async def update(self, current_mood: CurrentMood) -> CurrentMood: ...
+
+
+
+class MoodHistoryRepositoryPort(Protocol):
+    async def add(self, mood_record: any) -> any: ...
+    async def get_by_agent_id(
+        self, 
+        agent_id: int, 
+        from_time: datetime, 
+        to_time: datetime,
+        limit: int = 50
+    ) -> List[any]: ...
+    async def get_last_n(self, agent_id: int, limit: int = 10) -> List[any]: ...

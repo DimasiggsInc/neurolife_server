@@ -3,8 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview
+from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview, AgentCreate
 from src.current_mood.schemas import AgentCurrentMood
+
+from src.agent.dependencies import get_agent_service
+
+from src.agent.interfaces import AgentServicePort
 
 
 router = APIRouter(
@@ -31,7 +35,7 @@ async def get_agents_overview() -> AgentList:
     a = AgentOverview(
         id = uuid4(),
         name = "Эдик",
-        avatar = "",
+        avatar = "Base64",
         mood = mood,
         is_active=True,
         last_activity=datetime.now()
@@ -41,24 +45,14 @@ async def get_agents_overview() -> AgentList:
 
 
 
+@router.post("/", response_model=AgentFullInfo)
+async def create_agent(
+    create_agent_scheme: AgentCreate,
+    service: AgentServicePort = Depends(get_agent_service)
+) -> AgentFullInfo:
+    print(create_agent_scheme)
 
+    a = await service.create_agent(create_agent_scheme)
 
-# @router.post(
-#     "/register",
-#     response_model=UserAuthenticationResponse,
-#     status_code=status.HTTP_201_CREATED,
-# )
-# async def register(
-#     user: UserAuthenticationRequest,
-#     auth_service: AuthServicePort = Depends(get_auth_service)
-# ):
-#     try:
-#         result = await auth_service.register(user)
+    return AgentFullInfo(id=uuid4())
 
-#         return UserAuthenticationResponse(token=result.token, refresh_token=result.refresh_token)
-
-#     except UserAlreadyExistsError:
-#         raise HTTPException(
-#             status_code=status.HTTP_409_CONFLICT,
-#             detail="User with this nickname already exists",
-#         )
