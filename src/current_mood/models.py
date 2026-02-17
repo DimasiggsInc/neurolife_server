@@ -1,4 +1,4 @@
-from sqlalchemy import UUID, DateTime, Float, CheckConstraint
+from sqlalchemy import UUID, DateTime, Float, CheckConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column
 import uuid
 from datetime import datetime
@@ -39,6 +39,13 @@ class CurrentMood(Base):
         Float,
         CheckConstraint('value >= 0 AND value <= 1'),
         default=0.5
+    )
+
+    color: Mapped[str] = mapped_column(
+        String,
+        default="#ffffff",
+        nullable=True,
+        server_default="#ffffff"
     )
 
     updated_at: Mapped[datetime] = mapped_column(

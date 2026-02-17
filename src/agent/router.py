@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from uuid import UUID, uuid4
 from datetime import datetime
 
+from src.agent.services import AgentService
 from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview, AgentCreate
 from src.current_mood.schemas import AgentCurrentMood
 
@@ -23,25 +24,18 @@ async def get_agent_info(agent_id: UUID) -> AgentFullInfo:
 
 
 @router.get("/", response_model=AgentList)
-async def get_agents_overview() -> AgentList:
-    mood = AgentCurrentMood(
-        joy = 0.5,
-        sadness=0.5,
-        anger=0.5,
-        fear=0.5,
-        color='#ffffff'
-    )
-
-    a = AgentOverview(
-        id = uuid4(),
-        name = "Эдик",
-        avatar = "Base64",
-        mood = mood,
-        is_active=True,
-        last_activity=datetime.now()
-    ) 
-
-    return AgentList(agents=[a, a, a, a, a], total_count=2, active_count=2)
+async def list_agents(
+    limit: int = Query(20, ge=1, le=100, description="Лимит записей"),
+    active_only: bool = Query(True, description="Только активные агенты"),
+    service: AgentService = Depends(get_agent_service)
+):
+    try:
+        agents_list = await service.get_all_agents(limit=limit, active_only=active_only)
+        return agents_list
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 

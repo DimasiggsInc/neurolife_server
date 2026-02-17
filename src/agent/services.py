@@ -1,11 +1,14 @@
+from typing import Optional
 import uuid
 from pathlib import Path
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
+from src.current_mood.schemas import AgentCurrentMood
 from src.agent.interfaces import AgentRepositoryPort, AgentServicePort, ImageGeneratorPort
-from src.agent.schemas import AgentCreate, AgentFullInfo
+from src.agent.schemas import AgentCreate, AgentFullInfo, AgentList, AgentOverview
 from src.agent.models import Agent
 
 from src.speech_style.models import SpeechStyle
@@ -206,4 +209,71 @@ class AgentService(AgentServicePort):
             old_mood="neutral",
             new_mood="happy" if sentiment.get("positive", 0) > 0.5 else "neutral",
             trigger="user_message"
+        )
+
+    async def get_all_agents(self, limit: int = 20, active_only: bool = True) -> AgentList:
+        try:
+            agents = await self.agent_repository.get_all(limit=limit, active_only=active_only)
+            
+            # Считаем количество
+            from sqlalchemy import select, func
+            count_query = select(func.count(Agent.id))
+            if active_only:
+                count_query = count_query.where(Agent.is_active == True)
+            count_result = await self.session.execute(count_query)
+            total_count = count_result.scalar() or 0
+            
+            agents_overview = []
+            for agent in agents:
+                # ✅ Загружаем настроение отдельным запросом если есть ID
+                if agent.current_mood_id:
+                    mood_result = await self.session.execute(
+                        select(CurrentMood).where(CurrentMood.id == agent.current_mood_id)
+                    )
+                    mood_obj = mood_result.scalar_one_or_none()
+                    
+                    if mood_obj:
+                        mood_data = AgentCurrentMood(
+                            joy=mood_obj.joy or 0.3,
+                            sadness=mood_obj.sadness or 0.1,
+                            anger=mood_obj.anger or 0.1,
+                            fear=mood_obj.fear or 0.1,
+                            color=mood_obj.color or "#4A90E2"
+                        )
+                    else:
+                        mood_data = self._default_mood()
+                else:
+                    mood_data = self._default_mood()
+                
+                overview = AgentOverview(
+                    id=agent.id,
+                    name=agent.name,
+                    avatar=agent.avatar_url,
+                    mood=mood_data,
+                    is_active=agent.is_active,
+                    last_activity=agent.updated_at or datetime.utcnow()
+                )
+                agents_overview.append(overview)
+            
+            return AgentList(
+                agents=agents_overview,
+                total_count=total_count,
+                active_count=sum(1 for a in agents_overview if a.is_active)
+            )
+            
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise ValueError(f"Database error: {str(e)}")
+        except Exception as e:
+            await self.session.rollback()
+            raise ValueError(f"Unexpected error: {str(e)}")
+    
+    def _default_mood(self) -> AgentCurrentMood:
+        """Вспомогательный метод для дефолтного настроения"""
+        return AgentCurrentMood(
+            joy=0.3,
+            sadness=0.1,
+            anger=0.1,
+            fear=0.1,
+            color="#4A90E2"
         )
