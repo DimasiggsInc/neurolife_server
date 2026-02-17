@@ -34,3 +34,7 @@ class AgentCreate(BaseModel):
     model_config = ConfigDict(
         protected_namespaces=()  # Разрешаем поля с префиксом model_
     )
+
+
+class UserMessageToAgent(BaseModel):
+    ...

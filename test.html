@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест WebSocket</title>
+</head>
+<body>
+    <h1>🤖 Симулятор Агентов</h1>
+    
+    <div>
+        <button onclick="connect()">Подключиться</button>
+        <button onclick="disconnect()">Отключиться</button>
+    </div>
+    
+    <div>
+        <input id="messageInput" placeholder="Сообщение агенту...">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+    
+    <div>
+        <button onclick="sendWorldEvent()">Событие: Найден клад!</button>
+    </div>
+    
+    <h3>События:</h3>
+    <div id="events"></div>
+
+    <script>
+        let ws;
+        
+        function connect() {
+            ws = new WebSocket('ws://localhost:8000/ws/events');
+            
+            ws.onopen = () => {
+                log('✅ Подключено!');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                // ✅ Проверяем структуру перед доступом
+                console.log('Получено сообщение:', data);
+                
+                const messageType = data.type || 'unknown';
+                const eventData = data.data || {};
+                
+                if (messageType === 'message_received') {
+                    log(`📩 Сообщение получено: ${eventData.content || 'нет контента'}`);
+                    log(`   Агент: ${eventData.agent_id || 'неизвестно'}`);
+                    log(`   Ответ агента: ${eventData.agent_response || 'ожидание...'}`);
+                } else if (messageType === 'world_event') {
+                    log(`🌍 Событие мира: ${eventData.description || 'нет описания'}`);
+                } else if (messageType === 'agent_update') {
+                    log(`🤖 Обновление агента: ${eventData.update_type || 'неизвестно'}`);
+                } else {
+                    log(`📩 ${messageType}: ${JSON.stringify(eventData)}`);
+                }
+            };
+            
+            ws.onclose = () => {
+                log('❌ Отключено');
+            };
+        }
+        
+        function disconnect() {
+            if (ws) ws.close();
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            ws.send(JSON.stringify({
+                type: 'user_message',
+                agent_id: 'agent-uuid-here',
+                content: input.value
+            }));
+            input.value = '';
+        }
+        
+        function sendWorldEvent() {
+            ws.send(JSON.stringify({
+                type: 'world_event',
+                event_type: 'found_treasure',
+                description: 'Найден клад у реки!',
+                affected_agents: []
+            }));
+        }
+        
+        function log(message) {
+            const div = document.getElementById('events');
+            div.innerHTML += `<div>${new Date().toLocaleTimeString()} - ${message}</div>`;
+        }
+    </script>
+</body>
+</html>

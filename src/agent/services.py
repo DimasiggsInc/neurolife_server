@@ -17,6 +17,10 @@ from src.personality.repositories import PersonalityRepository
 from src.current_mood.models import CurrentMood
 from src.current_mood.repositories import CurrentMoodRepository
 
+from src.message.schemas import UserMessageToAgent
+
+from src.llm.interfaces import LLMMessage
+
 
 class AgentService(AgentServicePort):
     AVATARS_DIR = Path("/server/avatars")
@@ -126,3 +130,80 @@ class AgentService(AgentServicePort):
             if avatar_full_path.exists():
                 avatar_full_path.unlink()
             raise ValueError(f"Database error during agent creation: {str(e)}")
+
+    async def send_message_to_agent(
+    self,
+    agent_id: str,
+    user_message: UserMessageToAgent
+) -> dict:
+        """Пользователь отправляет сообщение агенту"""
+        # 1. Получаем агента
+        agent = await self.agent_repository.get_by_id(agent_id)
+        if not agent:
+            raise ValueError(f"Агент {agent_id} не найден")
+        
+        # 2. Формируем промпт с учетом личности и настроения
+        system_prompt = await self._build_system_prompt(agent)
+        
+        # 3. Отправляем в LLM
+        from src.llm.interfaces import LLMMessage
+        messages = [
+            LLMMessage(role="system", content=system_prompt),
+            LLMMessage(role="user", content=user_message.content)
+        ]
+        
+        llm_response = await self.llm_service.generate_response(messages)
+        
+        # 4. ✅ Формируем полную структуру сообщения
+        message_data = {
+            "message_id": str(uuid.uuid4()),
+            "sender": "user",
+            "sender_id": "user",
+            "receiver_id": agent_id,
+            "content": user_message.content,
+            "agent_response": llm_response.content,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # 5. Уведомляем клиентов через WebSocket
+        await self.event_service.notify_new_message(message_data)
+        
+        # 6. Обновляем настроение агента на основе сообщения
+        await self._update_agent_mood(agent_id, user_message.content)
+        
+        return {
+            "agent_id": agent_id,
+            "user_message": user_message.content,
+            "agent_response": llm_response.content,
+            "status": "delivered"
+        }
+
+    async def _build_system_prompt(self, agent: Agent) -> str:
+        """Построить системный промпт на основе личности агента"""
+        # TODO: загрузить personality из БД
+        prompt = f"""Ты — {agent.name}, автономный агент в виртуальном мире.
+
+Твоя личность:
+- Характер: добрый, любопытный, эмпатичный
+- Настроение: текущее состояние
+
+Ты общаешься с пользователем в реальном времени.
+Отвечай естественно, учитывая своё настроение и личность.
+"""
+        return prompt
+
+    async def _update_agent_mood(self, agent_id: str, message_content: str):
+        """Обновить настроение агента на основе сообщения"""
+        # 1. Анализ тональности через LLM
+        sentiment = await self.llm_service.analyze_sentiment(message_content)
+        
+        # 2. Обновить настроение в БД
+        # TODO: обновить current_mood
+        
+        # 3. Уведомить клиентов об изменении
+        await self.event_service.notify_agent_mood_change(
+            agent_id=agent_id,
+            old_mood="neutral",
+            new_mood="happy" if sentiment.get("positive", 0) > 0.5 else "neutral",
+            trigger="user_message"
+        )

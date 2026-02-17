@@ -7,7 +7,7 @@ from fastapi import Request
 from src.config import settings
 
 from src.agent.router import router as agents_router
-
+from src.websocket.router import router as websocket_router
 
 app = FastAPI()
 
@@ -26,6 +26,7 @@ def root():
     return {"status": "ok", "version": settings.APP_VERSION}
 
 
+app.include_router(websocket_router)
 app.include_router(agents_router, prefix="/api/v1")
 
 
