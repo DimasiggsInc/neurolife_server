@@ -26,4 +26,9 @@ class Settings:
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
 
 
+    FREEQWEN_BASE_URL =  os.getenv("FREEQWEN_BASE_URL", "http://localhost:3264/api")
+    FREEQWEN_MODEL =  os.getenv("FREEQWEN_MODEL", "qwen3.5-plus")
+    FREEQWEN_TIMEOUT = float(os.getenv("FREEQWEN_TIMEOUT", "60"))
+
+
 settings = Settings()

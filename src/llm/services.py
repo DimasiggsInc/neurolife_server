@@ -11,12 +11,14 @@ from schemas import (
     OpenAIChatCompletionResponse,
 )
 
+from src.config import settings
+
 
 class LLMService:
     def __init__(self) -> None:
-        self.base_url = os.getenv("FREEQWEN_BASE_URL", "http://localhost:3264/api")
-        self.model = os.getenv("FREEQWEN_MODEL", "qwen3.5-plus")
-        self.timeout_s = float(os.getenv("FREEQWEN_TIMEOUT", "60"))
+        self.base_url = settings.FREEQWEN_BASE_URL  # os.getenv("FREEQWEN_BASE_URL", "http://localhost:3264/api")
+        self.model = settings.FREEQWEN_MODEL #  os.getenv("FREEQWEN_MODEL", "qwen3.5-plus")
+        self.timeout_s = settings.FREEQWEN_TIMEOUT # float(os.getenv("FREEQWEN_TIMEOUT", "60"))
 
     def _build_system_prompt(self, ctx: AgentContextInput) -> str:
         agent_name = ctx.agent_profile.get("name", "Agent")
