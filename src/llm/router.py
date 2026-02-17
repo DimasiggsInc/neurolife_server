@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from src.llm.schemas import LLMModelList, LLMModelFullInfo, LLMModelOverview, LLMModelCreate
+from src.llm.schemas import LLMModelList # , LLMModelFullInfo, LLMModelOverview, LLMModelCreate
 from src.agent.dependencies import get_agent_service
 
 
