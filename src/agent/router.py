@@ -47,7 +47,7 @@ async def list_agents(
 @router.post("/", response_model=AgentFullInfo)
 async def create_agent(
     create_agent_scheme: AgentCreate,
-    service: AgentServicePort = Depends(get_agent_service)
+    service: AgentService = Depends(get_agent_service)
 ) -> AgentFullInfo:
     print(create_agent_scheme)
 

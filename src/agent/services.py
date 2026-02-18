@@ -68,7 +68,7 @@ class AgentService(AgentServicePort):
         # 2. Создаем персональность
         personality = Personality(
             speech_style_id=speech_style.id,
-            background=new_agent.background,
+            background=new_agent.background or "background",
             knowledge=0.7,
             safety=0.6,
             freedom=0.5,
@@ -319,6 +319,8 @@ class AgentService(AgentServicePort):
             agent = await self.agent_repository.get_by_id(agent_uuid)
             if not agent:
                 raise ValueError(f"Agent with id '{agent_id}' not found")
+
+            personality = await self.personality_repository.get_by_id(agent.personality_id)
             
             # 3. Загружаем настроение
             mood_data = self._default_mood()
@@ -347,7 +349,7 @@ class AgentService(AgentServicePort):
                 mood=mood_data,                    # ✅ Объект AgentCurrentMood
                 is_active=agent.is_active,         # ✅ Требуется
                 last_activity=agent.updated_at or datetime.utcnow(),  # ✅ Требуется
-                background="",  # TODO: Получать по 
+                background=personality.background,  # TODO: Получать по 
                 model=agent.ai_model,                     # ✅ Требуется (заглушка или из БД)
                 plan=agent.current_plan or "",     # ✅ plan (не current_plan)
                 created_at=agent.created_at.isoformat() + "Z" if agent.created_at else ""
