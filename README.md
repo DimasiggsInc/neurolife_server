@@ -1,6 +1,10 @@
 # neurolife_server
 
+Как запустить код:
 
+```
+docker-compose up --build
+```
 
 
 
