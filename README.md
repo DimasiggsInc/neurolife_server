@@ -1,7 +1,8 @@
 # neurolife_server
 
-Как запустить код:
-
+Как запустить сервер:
+1) Запустите прокси для [QWEN](https://github.com/y13sint/FreeQwenApi)
+2) Запустите докер этой командой:
 ```
 docker-compose up --build
 ```
