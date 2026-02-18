@@ -11,7 +11,7 @@ from src.llm.services import LLMService
 
 import json
 from typing import Dict, Any, Set
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, APIRouter
+from fastapi import WebSocket, WebSocketDisconnect, APIRouter
 import asyncio
 from datetime import datetime
 

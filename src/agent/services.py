@@ -132,10 +132,10 @@ class AgentService(AgentServicePort):
                 is_active=agent.is_active,
                 last_activity=agent.updated_at.isoformat(),
                 background=personality.background,
-                model="",
+                model=agent.ai_model,
                 plan=agent.current_plan,
             )
-            
+
         except Exception as e:
             await self.session.rollback()
             # Удаляем аватар при любой ошибке внутри try
@@ -347,8 +347,8 @@ class AgentService(AgentServicePort):
                 mood=mood_data,                    # ✅ Объект AgentCurrentMood
                 is_active=agent.is_active,         # ✅ Требуется
                 last_activity=agent.updated_at or datetime.utcnow(),  # ✅ Требуется
-                background= "",  # TODO: Получать по 
-                model="gpt-4",                     # ✅ Требуется (заглушка или из БД)
+                background="",  # TODO: Получать по 
+                model=agent.ai_model,                     # ✅ Требуется (заглушка или из БД)
                 plan=agent.current_plan or "",     # ✅ plan (не current_plan)
                 created_at=agent.created_at.isoformat() + "Z" if agent.created_at else ""
             )
