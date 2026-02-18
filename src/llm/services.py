@@ -12,17 +12,13 @@ from src.llm.schemas import (
 )
 
 from src.config import settings
-
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 class LLMService:
     def __init__(self) -> None:
-        self.base_url = settings.FREEQWEN_BASE_URL  # os.getenv("FREEQWEN_BASE_URL", "http://localhost:3264/api")
-        self.model = settings.FREEQWEN_MODEL #  os.getenv("FREEQWEN_MODEL", "qwen3.5-plus")
-        self.timeout_s = settings.FREEQWEN_TIMEOUT # float(os.getenv("FREEQWEN_TIMEOUT", "60"))
         self.base_url = settings.FREEQWEN_BASE_URL
         self.model = settings.FREEQWEN_MODEL
         self.timeout_s = settings.FREEQWEN_TIMEOUT
-
 
     def _build_system_prompt(self, ctx: AgentContextInput) -> str:
         agent_name = ctx.agent_profile.get("name", "Agent")
@@ -34,11 +30,11 @@ class LLMService:
             "{"
             "\"new_mood\": \"happy\"|\"neutral\"|\"sad\", "
             "\"message_to_chat\": string|null, "
-            "\"relationship_change\": number, "
+            "\"relationship_affinity\": number, "
             "\"memory_importance\": number"
             "}\n"
             "- memory_importance ∈ [0.0, 1.0]\n"
-            "- relationship_change ∈ [-1.0, 1.0]\n"
+            "- relationship_affinity ∈ [-1.0, 1.0]\n"
         )
 
     def _extract_json(self, text: str) -> str:
@@ -60,17 +56,6 @@ class LLMService:
             return t[start:end + 1].strip()
 
         return ""
-    def _build_user_prompt(self, ctx: AgentContextInput) -> str:
-        return (
-            "КОНТЕКСТ:\n"
-            f"- История чата (последнее): {ctx.last_10_messages}\n"
-            f"- Прошлое (саммари): {ctx.summary_of_rest}\n"
-            f"- Память о собеседнике: {ctx.vector_memory_about_interlocutor}\n\n"
-            "ЗАДАЧА:\n"
-            f"Если есть вопрос ({ctx.pending_question}), ответь на него.\n"
-            "Если вопроса нет — продолжай как агент.\n"
-            "Верни JSON по схеме из system.\n"
-        )
 
     def _build_user_prompt(self, ctx: AgentContextInput) -> str:
         return (
@@ -84,6 +69,19 @@ class LLMService:
             "Верни JSON по схеме из system.\n"
         )
 
+    def _build_user_prompt(self, ctx: AgentContextInput) -> str:
+        return (
+            "КОНТЕКСТ:\n"
+            f"- История чата (последнее): {ctx.last_10_messages}\n"
+            f"- Прошлое (саммари): {ctx.summary_of_rest}\n"
+            f"- Память о собеседнике: {ctx.vector_memory_about_interlocutor}\n\n"
+            "ЗАДАЧА:\n"
+            f"Если есть вопрос ({ctx.pending_question}), ответь на него.\n"
+            "Если вопроса нет — продолжай как агент.\n"
+            "Верни JSON по схеме из system.\n"
+        )
+    
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     async def _call_chat_completions(self, payload: Dict[str, Any]) -> OpenAIChatCompletionResponse:
         async with httpx.AsyncClient(timeout=self.timeout_s) as client:
             r = await client.post(f"{self.base_url}/chat/completions", json=payload)
@@ -109,7 +107,7 @@ class LLMService:
             out = AgentDecisionOutput(
                 new_mood=ctx.agent_mood,
                 message_to_chat=None,
-                relationship_change=0.0,
+                relationship_affinity=0.0,
                 memory_importance=0.0,
             )
             return out
@@ -119,7 +117,10 @@ class LLMService:
         try:
             if not extracted:
                 raise json.JSONDecodeError("no_json_found", raw_content, 0)
-            out = AgentDecisionOutput.model_validate(json.loads(extracted))
+            data = json.loads(extracted)
+            if "relationship_affinity" not in data:
+                data["relationship_affinity"] = 0.0
+            out = AgentDecisionOutput.model_validate(data)
         except (json.JSONDecodeError, ValidationError):
             # user content гарантированно НЕ пустой
             repair_payload: Dict[str, Any] = {
@@ -133,7 +134,7 @@ class LLMService:
                             "{"
                             "\"new_mood\":\"happy\"|\"neutral\"|\"sad\","
                             "\"message_to_chat\":string|null,"
-                            "\"relationship_change\":number,"
+                            "\"relationship_affinity\":number,"
                             "\"memory_importance\":number"
                             "}"
                         ),
@@ -158,13 +159,14 @@ class LLMService:
                 out = AgentDecisionOutput(
                     new_mood=ctx.agent_mood,
                     message_to_chat=None,
-                    relationship_change=0.0,
+                    relationship_affinity=0.0,
                     memory_importance=0.0,
                 )
                 return out
+            data = json.loads(fixed)
+            if "relationship_affinity" not in data:
+                data["relationship_affinity"] = 0.0
+            out = AgentDecisionOutput.model_validate(data)
 
-            out = AgentDecisionOutput.model_validate(json.loads(fixed))
-
-        out.relationship_change = max(-0.1, min(0.1, out.relationship_change))
+        out.relationship_affinity = max(-0.1, min(0.1, out.relationship_affinity))
         return out
-

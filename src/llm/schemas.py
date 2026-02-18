@@ -53,7 +53,7 @@ class AgentContextInput(BaseModel):
 class AgentDecisionOutput(BaseModel):
     new_mood: str
     message_to_chat: Optional[str]
-    relationship_affinity: float
+    relationship_affinity: Optional[float] = None
     memory_importance: float
 
 

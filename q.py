@@ -344,7 +344,7 @@ async def llm_agent_tick(ctx: AgentContextInput) -> Dict:
     return {
         "message_to_chat": out.message_to_chat,
         "new_mood": out.new_mood,
-        "relationship_change": float(out.relationship_change),
+        "relationship_affinity": float(out.relationship_affinity),
         "memory_importance": float(out.memory_importance or 0.0),
     }
 
