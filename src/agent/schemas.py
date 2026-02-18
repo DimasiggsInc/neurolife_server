@@ -43,6 +43,8 @@ class AgentCreate(BaseModel):
         protected_namespaces=()  # Разрешаем поля с префиксом model_
     )
 
+class AgentDeleteRequest(BaseModel):
+    agent_id: UUID
 
 class UserMessageToAgent(BaseModel):
     ...

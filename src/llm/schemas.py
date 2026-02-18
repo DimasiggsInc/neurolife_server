@@ -2,10 +2,29 @@ from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, List, Literal, Any
 from datetime import datetime
 
+class Message(BaseModel):
+    id: int
+    chat_id: str
+    sender_name: str
+    content: str
+    created_at: str
+    world_timestamp: int
+    is_system_event: bool = False
+    embedding: Optional[Any] = None  # позже
 
-# =========================
-# Your base schemas
-# =========================
+
+class MessageMemoryView(BaseModel):
+    """
+    Аналог таблицы Message_memory_view:
+    агент оценил важность ЧУЖОГО сообщения для будущей памяти.
+    """
+    id: int
+    agent_name: str
+    message_id: int
+    importance: float
+    created_at: str
+
+
 
 class LLMMessage(BaseModel):
     role: str  # "system", "user", "assistant"
@@ -34,7 +53,7 @@ class AgentContextInput(BaseModel):
 class AgentDecisionOutput(BaseModel):
     new_mood: str
     message_to_chat: Optional[str]
-    relationship_change: float
+    relationship_affinity: float
     memory_importance: float
 
 
@@ -43,10 +62,6 @@ class WSEvent(BaseModel):
     timestamp: datetime
     data: dict
 
-
-# =========================
-# OpenAI-like response schemas (FreeQwenApi compatible)
-# =========================
 
 class OpenAIChatMessage(BaseModel):
     role: Literal["system", "user", "assistant", "tool"]
@@ -65,14 +80,13 @@ class OpenAIUsage(BaseModel):
     total_tokens: int
 
 
-
 class OpenAIChatCompletionResponse(BaseModel):
     id: str
     object: str
     created: int
     model: str
     choices: List[OpenAIChatChoice]
-    usage: Optional[Dict[str, Any]] = None  # <-- ВОТ ЭТО
+    usage: Optional[Dict[str, Any]] = None
 
     chatId: Optional[str] = None
     parentId: Optional[str] = None

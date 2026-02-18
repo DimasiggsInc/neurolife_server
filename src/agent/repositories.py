@@ -32,7 +32,7 @@ class AgentRepository(AgentRepositoryPort):
         
         result = await self.session.execute(query)
         return list(result.scalars().all())
-
+    
     async def count_all(self, active_only: bool = True) -> Optional[int]:
         """✅ Получить общее количество агентов"""
         query = select(func.count(Agent.id))

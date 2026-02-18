@@ -1,3 +1,4 @@
+import os
 import json
 from typing import Any, Dict
 
@@ -15,9 +16,13 @@ from src.config import settings
 
 class LLMService:
     def __init__(self) -> None:
+        self.base_url = settings.FREEQWEN_BASE_URL  # os.getenv("FREEQWEN_BASE_URL", "http://localhost:3264/api")
+        self.model = settings.FREEQWEN_MODEL #  os.getenv("FREEQWEN_MODEL", "qwen3.5-plus")
+        self.timeout_s = settings.FREEQWEN_TIMEOUT # float(os.getenv("FREEQWEN_TIMEOUT", "60"))
         self.base_url = settings.FREEQWEN_BASE_URL
         self.model = settings.FREEQWEN_MODEL
         self.timeout_s = settings.FREEQWEN_TIMEOUT
+
 
     def _build_system_prompt(self, ctx: AgentContextInput) -> str:
         agent_name = ctx.agent_profile.get("name", "Agent")
@@ -55,6 +60,17 @@ class LLMService:
             return t[start:end + 1].strip()
 
         return ""
+    def _build_user_prompt(self, ctx: AgentContextInput) -> str:
+        return (
+            "КОНТЕКСТ:\n"
+            f"- История чата (последнее): {ctx.last_10_messages}\n"
+            f"- Прошлое (саммари): {ctx.summary_of_rest}\n"
+            f"- Память о собеседнике: {ctx.vector_memory_about_interlocutor}\n\n"
+            "ЗАДАЧА:\n"
+            f"Если есть вопрос ({ctx.pending_question}), ответь на него.\n"
+            "Если вопроса нет — продолжай как агент.\n"
+            "Верни JSON по схеме из system.\n"
+        )
 
     def _build_user_prompt(self, ctx: AgentContextInput) -> str:
         return (
@@ -151,3 +167,4 @@ class LLMService:
 
         out.relationship_change = max(-0.1, min(0.1, out.relationship_change))
         return out
+
