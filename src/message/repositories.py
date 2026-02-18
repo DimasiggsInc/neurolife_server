@@ -17,7 +17,7 @@ class MessageRepository(MessageRepositoryPort):
         self.session.add(message)
         await self.session.flush()
         return message
-    
+        
     async def get_by_id(self, message_id: uuid.UUID) -> Optional[Message]:
         """Получить сообщение по UUID"""
         result = await self.session.execute(

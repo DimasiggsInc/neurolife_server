@@ -17,7 +17,7 @@ class SimulationService:
         Реализация блока "Генерируем ответы/игнор" из твоей схемы
         """
         # 1. Находим все чаты агента
-        chats = await self.agent_repo.get_all_agent_chats(agent.id)
+        chats = await self.agent_service.get_all_agent_chats(agent.id)
         
         events_to_broadcast = []
 
@@ -64,12 +64,12 @@ class SimulationService:
                 })
             
             if decision.new_mood != agent.mood:
-                await self.agent_repo.update_agent_mood(agent.id, decision.new_mood)
+                await self.agent_repo.update(agent.id, decision.new_mood)
                 events_to_broadcast.append({
                     "type": "mood_change",
                     "data": {"agent": agent.name, "mood": decision.new_mood}
                 })
-                
+
             # Сохраняем новое воспоминание в Vector DB
             # await self.vector_repo.add_memory(agent.id, decision.new_memory_entry)
 
@@ -86,7 +86,7 @@ class SimulationService:
         """
         Запускается циклом в main.py
         """
-        agents = await self.agent_repo.get_all_agents()
+        agents = await self.agent_repo.get_all()
         all_events = []
         
         # Параллельная обработка всех агентов (asyncio.gather)

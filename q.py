@@ -11,7 +11,7 @@ from src.llm.services import LLMService
 
 import json
 from typing import Dict, Any, Set
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, APIRouter
 import asyncio
 from datetime import datetime
 
@@ -23,6 +23,9 @@ from src.message.interfaces import MessageRepositoryPort
 from src.message.repositories import MessageRepository
 from src.message.dependencies import get_message_repository
 
+from src.current_mood.models import CurrentMood
+from src.current_mood.repositories import CurrentMoodRepository
+
 from src.message.models import Message as Message_
 
 from fastapi import Depends
@@ -32,7 +35,10 @@ from uuid import uuid4
 
 
 
-app = FastAPI()
+app = APIRouter(
+    prefix="/ws",
+    tags=["WebSocket"],
+)
 
 # ==============================================================================
 # ПРЕДПОЛАГАЕМЫЕ ИМПОРТЫ МОДЕЛЕЙ БАЗЫ ДАННЫХ (SQLAlchemy)
@@ -89,7 +95,7 @@ manager = ConnectionManager()
 
 
 # ==================== ENDPOINTS ====================
-@app.websocket("/ws/events")
+@app.websocket("/events")
 async def websocket_endpoint(
     websocket: WebSocket,
     session: AsyncSession = Depends(get_session)
@@ -378,18 +384,38 @@ async def process_agent_tick(session: AsyncSession, agent: Dict) -> List[Dict]:
                 "type": "mood_change",
                 "data": {"agent": agent_name, "old_mood": old, "mood": agent["mood"]}
             })
+            print("\n"*10)
+            print(agent["mood"])
+            print("\n"*10)
 
-            from src.current_mood.repositories import CurrentMoodRepository
-            mood_repo = CurrentMoodRepository(session)
+            # mood_repo = CurrentMoodRepository(session)
+            # from src.agent.utils import generate_color
 
-            fake_uuid = uuid4()
+            # from src.agent.repositories import AgentRepository
 
-            _v = await mood_repo.update(
-                
-            )
-            await session.commit()
-            await session.refresh(_v)
-            print(f"[DB] Saved message: {_v}")
+            # agent_repo = AgentRepository(session)
+
+            # agent_repo.get_by_name()
+
+            
+            # joy = 1 if agent["mood"] == "happy" else 0
+            # sadness = 1 if agent["mood"] == "sad" else 0
+            # anger = 1 if agent["mood"] == "anger" else 0
+            # fear = 1 if agent["mood"] == "fear" else 0
+
+            # _v = await mood_repo.update(
+            #     CurrentMood(
+            #         joy = joy,
+            #         sadness = sadness,
+            #         anger = anger,
+            #         fear = fear,
+            #         color=generate_color(sadness, joy, anger, fear),
+            #         updated_at=datetime.now(timezone.utc)
+            #     )
+            # )
+            # await session.commit()
+            # await session.refresh(_v)
+            # print(f"[DB] Saved message: {_v}")
             
             # ---------------------------------------------------------
             # >>> DB SAVE: TABLE 'Agent' (или 'current_mood') <<<
@@ -548,9 +574,9 @@ async def simulation_loop():
         import traceback
         log_print(traceback.format_exc())
 
-import uvicorn
-if __name__ == "__main__":
-    # Запуск сервера через uvicorn
-    # host="0.0.0.0" делает сервер доступным не только локально, но и по сети (если нужно)
-    # port=8000 - стандартный порт
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# import uvicorn
+# if __name__ == "__main__":
+#     # Запуск сервера через uvicorn
+#     # host="0.0.0.0" делает сервер доступным не только локально, но и по сети (если нужно)
+#     # port=8000 - стандартный порт
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
