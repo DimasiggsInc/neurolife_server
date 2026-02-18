@@ -1,7 +1,5 @@
-from typing import Optional, List, Dict, Protocol
-from pydantic import BaseModel
+from typing import Protocol
 
-from src.llm.schemas import LLMMessage, LLMResponse
 
 
 class LLMService(Protocol):

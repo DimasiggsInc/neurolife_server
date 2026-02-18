@@ -11,7 +11,6 @@ from src.llm.router import router as models_router
 from q import app as websocket_router
 
 from src.simulation.services import SimulationService
-from fastapi import Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

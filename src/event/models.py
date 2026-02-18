@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
-from sqlalchemy import String, Text, DateTime, JSON, Integer, Index
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import String, Text, DateTime, JSON, Integer
+from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
 

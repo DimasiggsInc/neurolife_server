@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from src.agent.interfaces import AgentRepositoryPort, AgentServicePort, ImageGeneratorPort
 from src.agent.schemas import AgentCreate, AgentFullInfo, AgentList, AgentOverview

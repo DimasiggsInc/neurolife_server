@@ -9,22 +9,14 @@ from src.llm.schemas import Message, MessageMemoryView
 from src.llm.schemas import AgentContextInput
 from src.llm.services import LLMService
 
-import json
-from typing import Dict, Any, Set
 from fastapi import WebSocket, WebSocketDisconnect, APIRouter
-import asyncio
-from datetime import datetime
 
 from src.memory.models import Memory
 from src.memory.repositories import MemoryRepository
 
 
-from src.message.interfaces import MessageRepositoryPort
 from src.message.repositories import MessageRepository
-from src.message.dependencies import get_message_repository
 
-from src.current_mood.models import CurrentMood
-from src.current_mood.repositories import CurrentMoodRepository
 
 from src.message.models import Message as Message_
 

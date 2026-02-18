@@ -1,4 +1,3 @@
-import pgvector.sqlalchemy
 
 import os
 import sys

@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from uuid import UUID, uuid4
-from datetime import datetime
+from uuid import UUID
 
 from src.agent.services import AgentService
-from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview, AgentCreate, AgentDeleteRequest
-from src.current_mood.schemas import AgentCurrentMood
+from src.agent.schemas import AgentList, AgentFullInfo, AgentCreate
 
 from src.agent.dependencies import get_agent_service
 
@@ -39,7 +37,7 @@ async def list_agents(
         return agents_list
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 

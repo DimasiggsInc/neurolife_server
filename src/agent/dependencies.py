@@ -7,8 +7,8 @@ from src.personality.repositories import PersonalityRepository
 from src.speech_style.repositories import SpeechStyleRepository
 from src.agent.services import AgentService
 from src.agent.repositories import AgentRepository
-from src.agent.interfaces import AgentServicePort, AgentRepositoryPort, ImageGeneratorPort
-from src.agent.utils import ImageGenerator, generate_color
+from src.agent.interfaces import AgentRepositoryPort, ImageGeneratorPort
+from src.agent.utils import ImageGenerator
 from src.chat.repositories import ChatRepository
 from src.database import get_session
 
