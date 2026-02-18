@@ -14,7 +14,7 @@ from src.database import Base
 
 from src.agent.models import Agent  # noqa
 from src.chat.models import Chat  # noqa
-from src.chat_participant.models import СhatParticipant  # noqa
+from src.chat_participant.models import ChatParticipant  # noqa
 from src.current_mood.models import CurrentMood  # noqa
 from src.memory.models import Memory  # noqa
 from src.message.models import Message  # noqa

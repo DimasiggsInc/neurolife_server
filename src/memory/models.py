@@ -27,12 +27,11 @@ class Memory(Base):
     content: Mapped[str] = mapped_column(
         String(1000),
         nullable=False,
-        unique=True
     )
 
     embedding: Mapped[Vector] = mapped_column(
         Vector(1536),  # ⚠️ ЗАМЕНИТЕ 1536 НА ФАКТИЧЕСКУЮ РАЗМЕРНОСТЬ ВАШЕЙ МОДЕЛИ
-        nullable=False
+        nullable=True
     )
 
     world_timestamp: Mapped[datetime] = mapped_column(

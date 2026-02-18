@@ -1,15 +1,15 @@
 import base64
-from typing import Optional
 import uuid
 from pathlib import Path
 from datetime import datetime
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from src.current_mood.schemas import AgentCurrentMood
 from src.agent.interfaces import AgentRepositoryPort, AgentServicePort, ImageGeneratorPort
 from src.agent.schemas import AgentCreate, AgentFullInfo, AgentList, AgentOverview
+from src.chat.schemas import AgentChatList, ChatOverview
+from src.current_mood.schemas import AgentCurrentMood
 from src.agent.models import Agent
 
 from src.speech_style.models import SpeechStyle
@@ -25,6 +25,9 @@ from src.message.schemas import UserMessageToAgent
 
 from src.agent.utils import generate_color
 
+from src.chat.repositories import ChatRepository
+
+
 
 class AgentService(AgentServicePort):
     AVATARS_DIR = Path("/server/avatars")
@@ -36,7 +39,8 @@ class AgentService(AgentServicePort):
         agent_repository: AgentRepositoryPort,
         speech_style_repository: SpeechStyleRepository,
         personality_repository: PersonalityRepository,
-        current_mood_repository: CurrentMoodRepository
+        current_mood_repository: CurrentMoodRepository,
+        chat_repository: ChatRepository
     ):
         self.session = session
         self.image_generator = image_generator
@@ -44,6 +48,7 @@ class AgentService(AgentServicePort):
         self.speech_style_repository = speech_style_repository
         self.personality_repository = personality_repository
         self.current_mood_repository = current_mood_repository
+        self.chat_repository = chat_repository
         
         # ✅ Создаем директорию при инициализации
         self.AVATARS_DIR.mkdir(parents=True, exist_ok=True)
@@ -371,3 +376,78 @@ class AgentService(AgentServicePort):
             fear=0.1,
             color="#4A90E2"
         )
+
+
+    async def get_all_agent_chats(
+        self, 
+        agent_id: str, 
+        limit: int = 50
+    ) -> AgentChatList:
+        """
+        Получить все активные чаты для конкретного агента
+        
+        Соответствует требованию хакатона:
+        - 3.a Наблюдать за их жизнью в реальном времени
+        - 7. Инспектор агента (при клике показываем чаты)
+        """
+        try:
+            # 1. Валидируем UUID агента
+            agent_uuid = uuid.UUID(agent_id)
+            
+            # 2. Проверяем существование агента
+            agent = await self.agent_repository.get_by_id(agent_uuid)
+            if not agent:
+                raise ValueError(f"Агент с id '{agent_id}' не найден")
+            
+            # 3. Получаем все активные чаты агента из БД
+            chats = await self.chat_repository.get_all_active_chats_for_agent(
+                agent_id=agent_uuid, 
+                limit=limit
+            )
+            
+            # 4. Формируем ответ с дополнительной информацией
+            chats_overview = []
+            for chat in chats:
+                # Получаем последнее сообщение для превью
+                last_message = await self.chat_repository.get_last_message_for_chat(chat.id)
+                last_message_preview = last_message.content[:100] if last_message else None
+                
+                # Получаем количество непрочитанных
+                unread_count = await self.chat_repository.get_unread_count_for_agent(
+                    chat.id, 
+                    agent_uuid
+                )
+                
+                # Получаем количество участников
+                participants_count = await self.chat_repository.get_participants_count(chat.id)
+                
+                chat_overview = ChatOverview(
+                    id=chat.id,
+                    name=chat.name,
+                    type=chat.type,
+                    is_active=chat.is_active,
+                    created_at=chat.created_at,
+                    updated_at=chat.updated_at,
+                    last_message_preview=last_message_preview,
+                    unread_count=unread_count,
+                    participants_count=participants_count
+                )
+                chats_overview.append(chat_overview)
+            
+            return AgentChatList(
+                chats=chats_overview,
+                total_count=len(chats_overview),
+                agent_id=agent_uuid
+            )
+            
+        except ValueError as e:
+            error_msg = str(e)
+            if "badly formed hexadecimal UUID" in error_msg or "invalid literal" in error_msg:
+                raise ValueError(f"Неверный формат id агента: '{agent_id}'")
+            raise
+        except SQLAlchemyError as e:
+            await self.session.rollback()
+            raise ValueError(f"Ошибка базы данных: {str(e)}")
+        except Exception as e:
+            await self.session.rollback()
+            raise ValueError(f"Неожиданная ошибка: {str(e)}")

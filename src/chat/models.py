@@ -4,16 +4,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 import uuid
 from datetime import datetime
 from typing import Optional
-from enum import StrEnum
 
 from src.database import Base
-from src.chat.schemas import ChatSchemaFull
-
-
-class ChatType(StrEnum):
-    DIRECT = "direct"
-    GROUP = "group"
-    SYSTEM = "system"
+from src.chat.schemas import ChatSchemaFull, ChatType
 
 
 class Chat(Base):

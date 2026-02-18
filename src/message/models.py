@@ -37,7 +37,7 @@ class Message(Base):
 
     embedding: Mapped[Vector] = mapped_column(
         Vector(1536),  # ⚠️ ЗАМЕНИТЕ 1536 НА ФАКТИЧЕСКУЮ РАЗМЕРНОСТЬ ВАШЕЙ МОДЕЛИ
-        nullable=False
+        nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(

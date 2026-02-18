@@ -4,10 +4,10 @@ import uuid
 from datetime import datetime
 
 from src.database import Base
-from src.chat_participant.schemas import СhatParticipantSchemaFull
+from src.chat_participant.schemas import ChatParticipantSchemaFull
 
 
-class СhatParticipant(Base):
+class ChatParticipant(Base):
     """Модель Участника чата для БД."""
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -42,8 +42,8 @@ class СhatParticipant(Base):
     )
 
 
-    def to_read_model(self) -> СhatParticipantSchemaFull:
+    def to_read_model(self) -> ChatParticipantSchemaFull:
         """Преобразует модель в схему для чтения."""
-        return СhatParticipantSchemaFull(
+        return ChatParticipantSchemaFull(
             id=self.id,
         )

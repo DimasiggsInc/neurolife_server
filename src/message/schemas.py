@@ -7,4 +7,7 @@ class MessageSchemaFull(BaseModel):
 
 class UserMessageToAgent(BaseModel):
     content: str
-    
+
+
+class MessageCreate(BaseModel):
+    ...
