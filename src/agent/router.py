@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 
 from src.agent.services import AgentService
-from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview, AgentCreate
+from src.agent.schemas import AgentList, AgentFullInfo, AgentOverview, AgentCreate, AgentDeleteRequest
 from src.current_mood.schemas import AgentCurrentMood
 
 from src.agent.dependencies import get_agent_service
@@ -55,3 +55,14 @@ async def create_agent(
 
     return a
 
+
+
+@router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_agent(
+    agent_id: UUID,
+    service: AgentServicePort = Depends(get_agent_service),
+):
+    try:
+        await service.delete_agent(agent_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

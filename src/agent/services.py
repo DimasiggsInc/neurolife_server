@@ -366,7 +366,26 @@ class AgentService(AgentServicePort):
         except Exception as e:
             await self.session.rollback()
             raise ValueError(f"Unexpected error: {str(e)}")
+            
+    async def delete_agent(self, agent_id: uuid.UUID) -> bool:
+        # TODO удалить связи с агентом
+        """Метод для удаления"""
+        agent = await self.agent_repository.get_by_id(agent_id)
+        if not agent:
+            raise ValueError("Agent not found")
 
+        if agent.avatar_url:
+            filename = agent.avatar_url.split("/")[-1]
+            avatar_path = self.AVATARS_DIR / filename
+            if avatar_path.exists():
+                avatar_path.unlink()
+
+        deleted = await self.agent_repository.delete(agent_id)
+        if not deleted:
+            raise ValueError("Failed to delete agent")
+
+        return True
+    
     def _default_mood(self) -> AgentCurrentMood:
         """Вспомогательный метод для дефолтного настроения"""
         return AgentCurrentMood(

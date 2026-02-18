@@ -1,48 +1,33 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
+from typing import List, Optional
+import uuid
+
 from src.chat.models import Chat
 from src.chat_participant.models import ChatParticipant
 from src.message.models import Message
-from src.chat.schemas import ChatOverview
-from typing import List, Optional
-import uuid
 
 
 class ChatRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all_active_chats_for_agent(
-        self, 
-        agent_id: uuid.UUID, 
-        limit: int = 50
-    ) -> List[Chat]:
-        """
-        Получить все активные чаты, где агент является участником
-        """
-        # Субзапрос для получения ID чатов, где участвует агент
-        participant_subquery = select(ChatParticipant.chat_id).where(
-            ChatParticipant.agent_id == agent_id,
-            ChatParticipant.is_active == True
-        )
-        
+    async def list_all_chats(self, limit: int = 100, offset: int = 0) -> List[Chat]:
         query = (
             select(Chat)
-            .where(
-                Chat.id.in_(participant_subquery),
-                Chat.is_active == True
-            )
-            .order_by(Chat.updated_at.desc())  # Сначала новые
+            .where(Chat.is_active == True)
+            .order_by(Chat.updated_at.desc())
             .limit(limit)
-            .options(selectinload(Chat.participants))  # Загружаем участников
+            .offset(offset)
         )
-        
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
+    async def get_chat(self, chat_id: uuid.UUID) -> Optional[Chat]:
+        result = await self.session.execute(select(Chat).where(Chat.id == chat_id))
+        return result.scalar_one_or_none()
+
     async def get_last_message_for_chat(self, chat_id: uuid.UUID) -> Optional[Message]:
-        """Получить последнее сообщение в чате для превью"""
         query = (
             select(Message)
             .where(Message.chat_id == chat_id)
@@ -51,35 +36,30 @@ class ChatRepository:
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
-
-    async def get_unread_count_for_agent(self, chat_id: uuid.UUID, agent_id: uuid.UUID) -> int:
-        """Получить количество непрочитанных сообщений для агента в чате"""
-        # Получаем timestamp последнего прочтения
-        participant_query = select(ChatParticipant).where(
-            ChatParticipant.chat_id == chat_id,
-            ChatParticipant.agent_id == agent_id
-        )
-        participant_result = await self.session.execute(participant_query)
-        participant = participant_result.scalar_one_or_none()
-        
-        if not participant or not participant.last_read_at:
-            # Если нет записи о прочтении, считаем все сообщения непрочитанными
-            count_query = select(func.count(Message.id)).where(Message.chat_id == chat_id)
-        else:
-            # Считаем сообщения после последнего прочтения
-            count_query = select(func.count(Message.id)).where(
-                Message.chat_id == chat_id,
-                Message.created_at > participant.last_read_at
-            )
-        
-        result = await self.session.execute(count_query)
+    async def delete_chat(self, chat_id: uuid.UUID) -> bool:
+        chat = await self.get_chat(chat_id)
+        if not chat:
+            return False
+        await self.session.delete(chat)
+        return True
+    async def get_participants_count(self, chat_id: uuid.UUID) -> int:
+        query = select(func.count(ChatParticipant.id)).where(ChatParticipant.chat_id == chat_id)
+        result = await self.session.execute(query)
         return result.scalar() or 0
 
-    async def get_participants_count(self, chat_id: uuid.UUID) -> int:
-        """Получить количество участников в чате"""
-        query = select(func.count(ChatParticipant.id)).where(
-            ChatParticipant.chat_id == chat_id,
-            ChatParticipant.is_active == True
+    async def list_messages_for_chat(self, chat_id: uuid.UUID, limit: int = 200, offset: int = 0) -> List[Message]:
+        # Обычно для чата удобнее по времени по возрастанию.
+        query = (
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.created_at.asc())
+            .limit(limit)
+            .offset(offset)
         )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def count_messages_for_chat(self, chat_id: uuid.UUID) -> int:
+        query = select(func.count(Message.id)).where(Message.chat_id == chat_id)
         result = await self.session.execute(query)
         return result.scalar() or 0

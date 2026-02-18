@@ -7,6 +7,8 @@ from fastapi import Request
 from src.config import settings
 
 from src.agent.router import router as agents_router
+from src.chat.router import router as chat_router
+from src.chat_participant.router import router as chats_participants_router
 from src.llm.router import router as models_router
 from src.websocket.router import router as websocket_router
 
@@ -29,6 +31,8 @@ def root():
 
 app.include_router(websocket_router)
 app.include_router(agents_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
+app.include_router(chats_participants_router, prefix="/api/v1")
 app.include_router(models_router, prefix="/api/v1")
 
 

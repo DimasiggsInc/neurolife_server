@@ -1,6 +1,5 @@
 from sqlalchemy import UUID, String, Boolean, DateTime, func, Enum
 from sqlalchemy.orm import Mapped, mapped_column
-
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -10,7 +9,7 @@ from src.chat.schemas import ChatSchemaFull, ChatType
 
 
 class Chat(Base):
-    """Модель Чата для БД."""
+    __tablename__ = "chat"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -19,21 +18,11 @@ class Chat(Base):
         index=True
     )
 
-    name: Mapped[Optional[str]] = mapped_column(
-        String(100),
-        nullable=True  # NULL для direct/system чатов
-    )
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
-    type: Mapped[ChatType] = mapped_column(
-        Enum(ChatType),
-        nullable=False
-    )
+    type: Mapped[ChatType] = mapped_column(Enum(ChatType), nullable=False)
 
-    is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -41,18 +30,11 @@ class Chat(Base):
         server_default=func.now()
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False,
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    world_timestamp_created: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False
-    )
+    world_timestamp_created: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     def to_read_model(self) -> ChatSchemaFull:
-        """Преобразует модель в схему для чтения."""
         return ChatSchemaFull(
             id=self.id,
             name=self.name,
@@ -60,5 +42,5 @@ class Chat(Base):
             is_active=self.is_active,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            world_timestamp_created=self.world_timestamp_created
+            world_timestamp_created=self.world_timestamp_created,
         )
