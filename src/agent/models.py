@@ -24,6 +24,11 @@ class Agent(Base):
         nullable=False
     )
 
+    ai_model: Mapped[str] = mapped_column(
+        String(300),
+        nullable=False,
+    )
+
     current_mood_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         index=True,

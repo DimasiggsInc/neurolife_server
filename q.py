@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Optional, Any, Set
 
 # Импорты ваших моделей и сервисов
-from src.llm.models import Message, MessageMemoryView
+from src.llm.schemas import Message, MessageMemoryView
 from src.llm.schemas import AgentContextInput
 from src.llm.services import LLMService
 

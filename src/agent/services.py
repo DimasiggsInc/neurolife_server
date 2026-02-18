@@ -89,9 +89,6 @@ class AgentService(AgentServicePort):
 
             # 4. Валидация данных для ответа (внутри try, чтобы сработала очистка при ошибке)
             rgb_color = generate_color(current_mood.sadness, current_mood.joy, current_mood.anger, current_mood.fear)
-            
-            print("\n"*20)
-            print(rgb_color)
 
             mood = AgentCurrentMood(
                 joy=current_mood.joy,
@@ -112,6 +109,7 @@ class AgentService(AgentServicePort):
             agent = Agent(
                 id=agent_id,
                 name=new_agent.name,
+                ai_model=new_agent.ai_model,
                 personality_id=personality.id,
                 current_mood_id=current_mood.id,
                 current_plan=new_agent.plans,
