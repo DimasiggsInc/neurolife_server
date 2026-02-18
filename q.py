@@ -531,7 +531,7 @@ async def simulation_loop():
 
                 log_print("START SIMULATION...")
                 
-                for t in range(10):
+                for t in range(1000):
                     await run_simulation_tick(session, t + 1)
                     await asyncio.sleep(2) 
 
