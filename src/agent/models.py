@@ -27,6 +27,7 @@ class Agent(Base):
     ai_model: Mapped[str] = mapped_column(
         String(300),
         nullable=False,
+        default="QWEN 3"
     )
 
     current_mood_id: Mapped[uuid.UUID] = mapped_column(
