@@ -388,34 +388,6 @@ async def process_agent_tick(session: AsyncSession, agent: Dict) -> List[Dict]:
             print(agent["mood"])
             print("\n"*10)
 
-            # mood_repo = CurrentMoodRepository(session)
-            # from src.agent.utils import generate_color
-
-            # from src.agent.repositories import AgentRepository
-
-            # agent_repo = AgentRepository(session)
-
-            # agent_repo.get_by_name()
-
-            
-            # joy = 1 if agent["mood"] == "happy" else 0
-            # sadness = 1 if agent["mood"] == "sad" else 0
-            # anger = 1 if agent["mood"] == "anger" else 0
-            # fear = 1 if agent["mood"] == "fear" else 0
-
-            # _v = await mood_repo.update(
-            #     CurrentMood(
-            #         joy = joy,
-            #         sadness = sadness,
-            #         anger = anger,
-            #         fear = fear,
-            #         color=generate_color(sadness, joy, anger, fear),
-            #         updated_at=datetime.now(timezone.utc)
-            #     )
-            # )
-            # await session.commit()
-            # await session.refresh(_v)
-            # print(f"[DB] Saved message: {_v}")
             
             # ---------------------------------------------------------
             # >>> DB SAVE: TABLE 'Agent' (или 'current_mood') <<<

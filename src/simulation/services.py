@@ -2,7 +2,6 @@ import asyncio
 from typing import Optional
 from src.llm.schemas import AgentContextInput
 
-
 class SimulationService:
     def __init__(self, agent_service, agent_repo, message_repo, llm_service, ws_manager, vector_repo=None):
         self.agent_service = agent_service
