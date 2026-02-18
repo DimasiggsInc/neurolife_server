@@ -110,7 +110,10 @@ def generate_color(sadness, joy, anger, fear) -> str:
     r /= total
     g /= total
     b /= total
-
+    import random
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
     # Нормализация и конвертация в int
     r_int = int(round(max(0, min(255, r))))
     g_int = int(round(max(0, min(255, g))))
